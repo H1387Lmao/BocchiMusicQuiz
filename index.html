@@ -2,62 +2,58 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bocchi Music Quiz</title>
+
 <style>
 body {
     font-family: sans-serif;
     background: #0e0e0e;
     color: white;
-    display: flex;
-    justify-content: center;
-    padding: 15px;
+    margin: 0;
 }
-#app { width: 100%; max-width: 420px; }
+#app {
+    max-width: 420px;
+    margin: auto;
+    padding: 16px;
+}
 .hidden { display: none; }
 
 button {
-    padding: 14px;
+    width: 100%;
+    padding: 16px;
+    margin-top: 10px;
+    font-size: 16px;
     background: #1a1a1a;
     border: none;
     color: white;
-    width: 100%;
-    margin-top: 8px;
-    font-size: 15px;
 }
+
 button:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
 }
 
 .correctFlash { background: rgba(0,255,0,0.4) !important; }
 .wrongFlash { background: rgba(255,0,0,0.4) !important; }
 
-audio {
-    width: 100%;
-    margin-top: 10px;
+#choices button {
+    margin-top: 8px;
 }
 
-#timer {
-    margin-top: 8px;
+#timer, #status {
+    margin-top: 10px;
     font-size: 14px;
     color: #aaa;
 }
 
-#status {
-    margin-top: 6px;
-    font-size: 13px;
-    height: 16px;
-}
-
 ul {
-    margin-top: 15px;
     padding: 0;
     list-style: none;
 }
 li {
     padding: 6px;
-    margin-bottom: 4px;
+    margin-top: 4px;
     background: rgba(255,255,255,0.05);
-    font-size: 13px;
 }
 .correct { background: rgba(0,255,0,0.2); }
 .wrong { background: rgba(255,0,0,0.2); }
@@ -67,11 +63,14 @@ li {
 
 <div id="app">
 
+<!-- IDLE -->
 <div id="idle">
     <h3>Bocchi Music Quiz</h3>
-    <button id="startBtn">Start</button>
+    <div id="loading">Preloading: 0%</div>
+    <button id="startBtn" disabled>Start</button>
 </div>
 
+<!-- PLAYING -->
 <div id="playing" class="hidden">
     <audio id="player" controls></audio>
     <div id="choices"></div>
@@ -79,6 +78,7 @@ li {
     <div id="timer">0.00s</div>
 </div>
 
+<!-- RESULTS -->
 <div id="results" class="hidden">
     <h3>Results</h3>
     <div id="finalTime"></div>
@@ -90,49 +90,53 @@ li {
 
 <script>
 const files = [
-"Distortion!!.mp3",
-"Re_Re_.mp3",
-"UNITE.mp3",
-"milky way.mp3",
-"あのバンド.mp3",
-"なにが悪い.mp3",
-"ひとりぼっち東京.mp3",
-"ひみつ基地.mp3",
-"カラカラ.mp3",
-"ギターと孤独と蒼い惑星.mp3",
-"ドッペルゲンガー.mp3",
-"フラッシュバッカー.mp3",
-"ラブソングが歌えない.mp3",
-"ワタシダケユウレイ.mp3",
-"今、僕、アンダーグラウンドから.mp3",
-"僕と三原色.mp3",
-"光の中へ.mp3",
-"夢を束ねて.mp3",
-"小さな海.mp3",
-"忘れてやらない.mp3",
-"惑う星.mp3",
-"星座になれたら.mp3",
-"月並みに輝け.mp3",
-"秒針少女.mp3",
-"転がる岩、君に朝が降る.mp3",
-"青い春と西の空.mp3",
-"青春コンプレックス.mp3"
-].map(f => f.trim());
+"Distortion!!.mp3","Re_Re_.mp3","UNITE.mp3","milky way.mp3",
+"あのバンド.mp3","なにが悪い.mp3","ひとりぼっち東京.mp3","ひみつ基地.mp3",
+"カラカラ.mp3","ギターと孤独と蒼い惑星.mp3","ドッペルゲンガー.mp3",
+"フラッシュバッカー.mp3","ラブソングが歌えない.mp3","ワタシダケユウレイ.mp3",
+"今、僕、アンダーグラウンドから.mp3","僕と三原色.mp3","光の中へ.mp3",
+"夢を束ねて.mp3","小さな海.mp3","忘れてやらない.mp3","惑う星.mp3",
+"星座になれたら.mp3","月並みに輝け.mp3","秒針少女.mp3",
+"転がる岩、君に朝が降る.mp3","青い春と西の空.mp3","青春コンプレックス.mp3"
+];
+
+// ===== preload =====
+let audioMap = {};
+let loaded = 0;
+
+const loadingEl = document.getElementById("loading");
+const startBtn = document.getElementById("startBtn");
+
+files.forEach(file => {
+    const audio = new Audio("musics/" + encodeURIComponent(file));
+    audio.preload = "auto";
+
+    audio.addEventListener("canplaythrough", () => {
+        loaded++;
+        loadingEl.textContent = "Preloading: " + Math.floor((loaded/files.length)*100) + "%";
+
+        if (loaded === files.length) {
+            loadingEl.textContent = "Ready";
+            startBtn.disabled = false;
+        }
+    });
+
+    audioMap[file] = audio;
+});
 
 // ===== utils
-function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+function shuffle(a){
+    for(let i=a.length-1;i>0;i--){
+        let j=Math.floor(Math.random()*(i+1));
+        [a[i],a[j]]=[a[j],a[i]];
     }
 }
-
-function pickChoices(correct) {
-    let pool = files.filter(f => f !== correct);
+function pickChoices(correct){
+    let pool = files.filter(f=>f!==correct);
     shuffle(pool);
-    let opts = [correct, ...pool.slice(0, 3)];
-    shuffle(opts);
-    return opts;
+    let arr = [correct,...pool.slice(0,3)];
+    shuffle(arr);
+    return arr;
 }
 
 // ===== DOM
@@ -142,163 +146,148 @@ const results = document.getElementById("results");
 
 const player = document.getElementById("player");
 const choicesEl = document.getElementById("choices");
-const timerEl = document.getElementById("timer");
 const statusEl = document.getElementById("status");
+const timerEl = document.getElementById("timer");
 const listEl = document.getElementById("list");
 const finalTimeEl = document.getElementById("finalTime");
 
 // ===== state
 let queue, index, stats;
 let startTime, songStartTime;
-let running = false;
-let locked = false;
+let running=false, locked=false;
 
 // ===== modes
-function showIdle() {
-    idle.classList.remove("hidden");
-    playing.classList.add("hidden");
-    results.classList.add("hidden");
-}
-function showPlaying() {
-    idle.classList.add("hidden");
-    playing.classList.remove("hidden");
-    results.classList.add("hidden");
-}
-function showResults() {
-    idle.classList.add("hidden");
-    playing.classList.add("hidden");
-    results.classList.remove("hidden");
-}
+function showIdle(){ idle.classList.remove("hidden"); playing.classList.add("hidden"); results.classList.add("hidden"); }
+function showPlaying(){ idle.classList.add("hidden"); playing.classList.remove("hidden"); results.classList.add("hidden"); }
+function showResults(){ idle.classList.add("hidden"); playing.classList.add("hidden"); results.classList.remove("hidden"); }
 
 // ===== game
-function initGame() {
-    queue = [...files];
+function initGame(){
+    queue=[...files];
     shuffle(queue);
-    index = 0;
+    index=0;
 
-    stats = {};
-    queue.forEach(f => stats[f] = { wrong: 0, solved: false, time: 0 });
+    stats={};
+    queue.forEach(f=>stats[f]={wrong:0,solved:false,time:0});
 
-    startTime = performance.now();
-    running = true;
+    startTime=performance.now();
+    running=true;
 
     loadSong();
     updateTimer();
 }
 
-function loadSong() {
-    if (index >= queue.length) return endGame();
+function loadSong(){
+    if(index>=queue.length) return endGame();
 
     let current = queue[index];
 
-    player.src = "musics/" + encodeURIComponent(current);
-    player.load();
+    let audio = audioMap[current];
+    audio.currentTime = 0;
 
-    player.play().catch(() => {
-        // mobile autoplay fallback
-        statusEl.textContent = "Tap play ▶";
-    });
+    player.srcObject = null;
+    player.src = audio.src;
+
+    player.play().catch(()=> statusEl.textContent="Tap play");
 
     songStartTime = performance.now();
     renderChoices(current);
 }
 
-function renderChoices(correct) {
-    choicesEl.innerHTML = "";
-    statusEl.textContent = "";
+function renderChoices(correct){
+    choicesEl.innerHTML="";
+    statusEl.textContent="";
 
-    let options = pickChoices(correct);
-
-    options.forEach(opt => {
-        let btn = document.createElement("button");
-        btn.textContent = opt.replace(".mp3", "");
-
-        btn.onclick = () => handleAnswer(btn, opt, correct);
-        choicesEl.appendChild(btn);
+    pickChoices(correct).forEach(opt=>{
+        let b=document.createElement("button");
+        b.textContent=opt.replace(".mp3","").replace("_", ": ");
+        b.onclick=()=>handleAnswer(b,opt,correct);
+        choicesEl.appendChild(b);
     });
 }
 
-function handleAnswer(btn, selected, correct) {
-    if (!running || locked) return;
-    locked = true;
+function handleAnswer(btn,selected,correct){
+    if(!running||locked) return;
+    locked=true;
 
-    if (selected === correct) {
+    if(selected===correct){
         btn.classList.add("correctFlash");
-        statusEl.textContent = "Correct";
+        statusEl.textContent="Correct";
 
-        let elapsed = (performance.now() - songStartTime) / 1000;
-        stats[correct].solved = true;
-        stats[correct].time = elapsed;
+        let t=(performance.now()-songStartTime)/1000;
+        stats[correct].solved=true;
+        stats[correct].time=t;
 
-        setTimeout(() => {
+        setTimeout(()=>{
             index++;
-            locked = false;
+            locked=false;
             loadSong();
-        }, 400);
-
+        },350);
     } else {
         btn.classList.add("wrongFlash");
-        statusEl.textContent = "Wrong";
+        statusEl.textContent="Wrong";
         stats[correct].wrong++;
 
-        setTimeout(() => {
-            locked = false;
+        setTimeout(()=>{
             btn.classList.remove("wrongFlash");
-        }, 300);
+            locked=false;
+        },300);
     }
 }
 
-function endGame() {
-    running = false;
+function endGame(){
+    running=false;
     player.pause();
 
-    let total = (performance.now() - startTime) / 1000;
-    finalTimeEl.textContent = "Total Time: " + total.toFixed(2) + "s";
+    let total=(performance.now()-startTime)/1000;
+    finalTimeEl.textContent="Total Time: "+total.toFixed(2)+"s";
 
     renderList();
     showResults();
 }
 
 // ===== timer
-function updateTimer() {
-    if (!running) return;
-    timerEl.textContent = ((performance.now() - startTime)/1000).toFixed(2) + "s";
+function updateTimer(){
+    if(!running) return;
+    timerEl.textContent=((performance.now()-startTime)/1000).toFixed(2)+"s";
     requestAnimationFrame(updateTimer);
 }
 
 // ===== results
-function renderList() {
-    listEl.innerHTML = "";
+function renderList(){
+    listEl.innerHTML="";
+    queue.forEach(f=>{
+        let li=document.createElement("li");
+        let s=stats[f];
 
-    queue.forEach(file => {
-        let li = document.createElement("li");
-        let s = stats[file];
+        if(s.solved&&s.wrong===0) li.classList.add("correct");
+        else if(s.wrong>0) li.classList.add("wrong");
 
-        if (s.solved && s.wrong === 0) li.classList.add("correct");
-        else if (s.wrong > 0) li.classList.add("wrong");
-
-        li.textContent = `${file.replace(".mp3","")} | wrong:${s.wrong} | time:${s.time.toFixed(2)}s`;
+        li.textContent=`${f.replace(".mp3","").replace("_",": ")} | wrong:${s.wrong} | time:${s.time.toFixed(2)}s`;
         listEl.appendChild(li);
     });
 }
 
 // ===== controls
-document.getElementById("startBtn").onclick = () => {
+startBtn.onclick=()=>{
     showPlaying();
     initGame();
 };
 
-document.getElementById("shareBtn").onclick = () => {
-    let text = finalTimeEl.textContent + "\n";
-    queue.forEach(f => {
-        let s = stats[f];
-        text += `${f} | wrong:${s.wrong} | time:${s.time.toFixed(2)}s\n`;
+document.getElementById("shareBtn").onclick=()=>{
+    let text=finalTimeEl.textContent+"\n";
+    queue.forEach(f=>{
+        let s=stats[f];
+        text+=`${f} | wrong:${s.wrong} | time:${s.time.toFixed(2)}s\n`;
     });
     navigator.clipboard.writeText(text);
+    document.getElementById("shareBtn").innerText="Copied";
+    setTimeout(() => {
+      document.getElementById("shareBtn").innerText="Share";
+    }, 300);
 };
 
 showIdle();
 </script>
-
 </body>
 </html>

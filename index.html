@@ -28,17 +28,12 @@ button {
     border: none;
     color: white;
 }
-
-button:active {
-    transform: scale(0.97);
-}
+button:active { transform: scale(0.97); }
 
 .correctFlash { background: rgba(0,255,0,0.4) !important; }
 .wrongFlash { background: rgba(255,0,0,0.4) !important; }
 
-#choices button {
-    margin-top: 8px;
-}
+#choices button { margin-top: 8px; }
 
 #timer, #status {
     margin-top: 10px;
@@ -46,10 +41,7 @@ button:active {
     color: #aaa;
 }
 
-ul {
-    padding: 0;
-    list-style: none;
-}
+ul { padding: 0; list-style: none; }
 li {
     padding: 6px;
     margin-top: 4px;
@@ -63,14 +55,12 @@ li {
 
 <div id="app">
 
-<!-- IDLE -->
 <div id="idle">
     <h3>Bocchi Music Quiz</h3>
-    <div id="loading">Preloading: 0%</div>
-    <button id="startBtn" disabled>Start</button>
+    <div id="loading">Background loading: 0%</div>
+    <button id="startBtn">Start</button>
 </div>
 
-<!-- PLAYING -->
 <div id="playing" class="hidden">
     <audio id="player" controls></audio>
     <div id="choices"></div>
@@ -78,7 +68,6 @@ li {
     <div id="timer">0.00s</div>
 </div>
 
-<!-- RESULTS -->
 <div id="results" class="hidden">
     <h3>Results</h3>
     <div id="finalTime"></div>
@@ -102,27 +91,59 @@ const files = [
 
 // ===== preload =====
 let audioMap = {};
-let loaded = 0;
+let loadedSet = new Set();
+let loadingEl = document.getElementById("loading");
 
-const loadingEl = document.getElementById("loading");
-const startBtn = document.getElementById("startBtn");
+function preloadFile(file) {
+    if (loadedSet.has(file)) return Promise.resolve();
 
-files.forEach(file => {
-    const audio = new Audio("musics/" + encodeURIComponent(file));
-    audio.preload = "auto";
+    return new Promise(resolve => {
+        const audio = new Audio("musics/" + encodeURIComponent(file));
+        audio.preload = "auto";
 
-    audio.addEventListener("canplaythrough", () => {
-        loaded++;
-        loadingEl.textContent = "Preloading: " + Math.floor((loaded/files.length)*100) + "%";
+        const done = () => {
+            if (!loadedSet.has(file)) {
+                loadedSet.add(file);
+                loadingEl.textContent =
+                    "Background loading: " + Math.floor((loadedSet.size / files.length) * 100) + "%";
+            }
+            resolve();
+        };
 
-        if (loaded === files.length) {
-            loadingEl.textContent = "Ready";
-            startBtn.disabled = false;
-        }
+        audio.addEventListener("loadeddata", done, { once: true });
+        audio.addEventListener("error", done, { once: true });
+
+        audioMap[file] = audio;
     });
+}
 
-    audioMap[file] = audio;
-});
+async function preloadAllFast() {
+    await Promise.all(files.map(preloadFile));
+}
+
+let preloadRunning = false;
+
+async function preloadNextFromQueue() {
+    if (preloadRunning || !queue) return;
+    preloadRunning = true;
+
+    let priority = queue.slice(index, index + 3);
+
+    // parallel load next 3
+    await Promise.all(priority.map(preloadFile));
+
+    // background rest
+    (async () => {
+        for (let file of files) {
+            if (!loadedSet.has(file)) {
+                preloadFile(file);
+                await new Promise(r => setTimeout(r, 30));
+            }
+        }
+    })();
+
+    preloadRunning = false;
+}
 
 // ===== utils
 function shuffle(a){
@@ -137,6 +158,12 @@ function pickChoices(correct){
     let arr = [correct,...pool.slice(0,3)];
     shuffle(arr);
     return arr;
+}
+function formatName(name){
+    return name
+        .replace(".mp3","")
+        .replace("Re_Re_","Re:Re:")
+        .replace("_",": ");
 }
 
 // ===== DOM
@@ -156,6 +183,18 @@ let queue, index, stats;
 let startTime, songStartTime;
 let running=false, locked=false;
 
+// ===== playback sync =====
+function waitForPlaybackStart() {
+    return new Promise(resolve => {
+        const onPlay = () => {
+            player.removeEventListener("playing", onPlay);
+            resolve();
+        };
+        player.addEventListener("playing", onPlay);
+        setTimeout(resolve, 1000);
+    });
+}
+
 // ===== modes
 function showIdle(){ idle.classList.remove("hidden"); playing.classList.add("hidden"); results.classList.add("hidden"); }
 function showPlaying(){ idle.classList.add("hidden"); playing.classList.remove("hidden"); results.classList.add("hidden"); }
@@ -173,25 +212,40 @@ function initGame(){
     startTime=performance.now();
     running=true;
 
+    preloadNextFromQueue();
     loadSong();
     updateTimer();
 }
 
-function loadSong(){
+async function loadSong(){
     if(index>=queue.length) return endGame();
 
     let current = queue[index];
-
     let audio = audioMap[current];
-    audio.currentTime = 0;
 
-    player.srcObject = null;
-    player.src = audio.src;
+    if (audio) {
+        audio.currentTime = 0;
+        player.src = audio.src;
+    } else {
+        player.src = "musics/" + encodeURIComponent(current);
+    }
 
-    player.play().catch(()=> statusEl.textContent="Tap play");
-
-    songStartTime = performance.now();
     renderChoices(current);
+    player.load();
+    statusEl.textContent = "Loading...";
+
+    try {
+        await player.play();
+    } catch {
+        statusEl.textContent = "Tap play";
+        await waitForPlaybackStart();
+    }
+
+    await waitForPlaybackStart();
+
+    statusEl.textContent = "";
+    songStartTime = performance.now();
+
 }
 
 function renderChoices(correct){
@@ -200,7 +254,7 @@ function renderChoices(correct){
 
     pickChoices(correct).forEach(opt=>{
         let b=document.createElement("button");
-        b.textContent=opt.replace(".mp3","").replace("_", ": ");
+        b.textContent=formatName(opt);
         b.onclick=()=>handleAnswer(b,opt,correct);
         choicesEl.appendChild(b);
     });
@@ -221,12 +275,15 @@ function handleAnswer(btn,selected,correct){
         setTimeout(()=>{
             index++;
             locked=false;
+            preloadNextFromQueue();
             loadSong();
         },350);
     } else {
         btn.classList.add("wrongFlash");
         statusEl.textContent="Wrong";
         stats[correct].wrong++;
+        startTime-=10000;
+        songStartTime-=10000;
 
         setTimeout(()=>{
             btn.classList.remove("wrongFlash");
@@ -249,7 +306,12 @@ function endGame(){
 // ===== timer
 function updateTimer(){
     if(!running) return;
-    timerEl.textContent=((performance.now()-startTime)/1000).toFixed(2)+"s";
+
+    if (!player.paused && !player.seeking) {
+        timerEl.textContent =
+            ((performance.now()-startTime)/1000).toFixed(2)+"s";
+    }
+
     requestAnimationFrame(updateTimer);
 }
 
@@ -263,7 +325,7 @@ function renderList(){
         if(s.solved&&s.wrong===0) li.classList.add("correct");
         else if(s.wrong>0) li.classList.add("wrong");
 
-        li.textContent=`${f.replace(".mp3","").replace("_",": ")} | wrong:${s.wrong} | time:${s.time.toFixed(2)}s`;
+        li.textContent=`${formatName(f)} | wrong:${s.wrong} | time:${s.time.toFixed(2)}s`;
         listEl.appendChild(li);
     });
 }
@@ -274,17 +336,17 @@ startBtn.onclick=()=>{
     initGame();
 };
 
+document.getElementById("preloadBtn").onclick = preloadAllFast;
+
 document.getElementById("shareBtn").onclick=()=>{
     let text=finalTimeEl.textContent+"\n";
     queue.forEach(f=>{
         let s=stats[f];
-        text+=`${f} | wrong:${s.wrong} | time:${s.time.toFixed(2)}s\n`;
+        text+=`${formatName(f)} | wrong:${s.wrong} | time:${s.time.toFixed(2)}s\n`;
     });
     navigator.clipboard.writeText(text);
     document.getElementById("shareBtn").innerText="Copied";
-    setTimeout(() => {
-      document.getElementById("shareBtn").innerText="Share";
-    }, 300);
+    setTimeout(()=>{document.getElementById("shareBtn").innerText="Share";},300);
 };
 
 showIdle();

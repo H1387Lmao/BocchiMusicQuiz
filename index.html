@@ -283,7 +283,6 @@ function handleAnswer(btn,selected,correct){
         statusEl.textContent="Wrong";
         stats[correct].wrong++;
         startTime-=10000;
-        songStartTime-=10000;
 
         setTimeout(()=>{
             btn.classList.remove("wrongFlash");

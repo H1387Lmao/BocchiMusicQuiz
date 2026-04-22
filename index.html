@@ -1,355 +1,601 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bocchi Music Quiz</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bocchi Music Quiz</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+    }
 
-<style>
-body {
-    font-family: sans-serif;
-    background: #0e0e0e;
-    color: white;
-    margin: 0;
-}
-#app {
-    max-width: 420px;
-    margin: auto;
-    padding: 16px;
-}
-.hidden { display: none; }
+    body {
+      font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+      background: linear-gradient(145deg, #0b0e14 0%, #141a24 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 16px;
+      color: #f0f0f0;
+    }
 
-button {
-    width: 100%;
-    padding: 16px;
-    margin-top: 10px;
-    font-size: 16px;
-    background: #1a1a1a;
-    border: none;
-    color: white;
-}
-button:active { transform: scale(0.97); }
+    #app {
+      max-width: 480px;
+      width: 100%;
+      background: rgba(18, 25, 35, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 32px;
+      padding: 24px 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 215, 150, 0.1) inset;
+      transition: box-shadow 0.3s ease;
+    }
 
-.correctFlash { background: rgba(0,255,0,0.4) !important; }
-.wrongFlash { background: rgba(255,0,0,0.4) !important; }
+    h3 {
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      margin-bottom: 18px;
+      font-size: 26px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 14px;
+    }
 
-#choices button { margin-top: 8px; }
+    button {
+      background: rgba(30, 40, 55, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: #f0f0f0;
+      padding: 14px 18px;
+      margin: 8px 0;
+      font-size: 16px;
+      font-weight: 500;
+      border-radius: 40px;
+      width: 100%;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      letter-spacing: 0.3px;
+    }
 
-#timer, #status {
-    margin-top: 10px;
-    font-size: 14px;
-    color: #aaa;
-}
+    button:hover {
+      background: #2f4058;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 200, 120, 0.2) inset;
+      border-color: rgba(255, 200, 120, 0.3);
+    }
 
-ul { padding: 0; list-style: none; }
-li {
-    padding: 6px;
-    margin-top: 4px;
-    background: rgba(255,255,255,0.05);
-}
-.correct { background: rgba(0,255,0,0.2); }
-.wrong { background: rgba(255,0,0,0.2); }
-</style>
+    button:active {
+      transform: scale(0.98);
+      background: #1f2a38;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    #choices {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 16px 0 10px;
+    }
+
+    #choices button {
+      margin: 0;
+      text-align: left;
+      padding-left: 22px;
+      background: rgba(20, 30, 42, 0.8);
+      border-radius: 30px;
+      font-weight: 400;
+    }
+
+    .correct-flash {
+      animation: correctPulse 0.4s ease-out;
+      background: rgba(50, 200, 100, 0.3) !important;
+      border-color: #6fcf97 !important;
+    }
+
+    .wrong-flash {
+      animation: wrongShake 0.3s ease;
+      background: rgba(220, 60, 60, 0.25) !important;
+      border-color: #e07c7c !important;
+    }
+
+    @keyframes correctPulse {
+      0% { transform: scale(1); background: rgba(80, 220, 120, 0.5); }
+      50% { transform: scale(1.01); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes wrongShake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    #timer {
+      font-size: 42px;
+      font-weight: 300;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      margin: 8px 0 4px;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #ffe6b0, #ffd78a);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 12px rgba(255, 215, 100, 0.3);
+    }
+
+    #status {
+      min-height: 28px;
+      font-size: 16px;
+      color: #b9c7da;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .lang-toggle {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .lang-toggle button {
+      width: auto;
+      padding: 8px 18px;
+      margin: 0;
+      font-size: 14px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 40px;
+    }
+
+    .lang-toggle button.active {
+      background: #3e566b;
+      border-color: #ffd966;
+    }
+
+    #loading {
+      margin: 16px 0;
+      padding: 10px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 60px;
+      text-align: center;
+      font-weight: 500;
+      color: #aac8ff;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    li {
+      padding: 12px 16px;
+      margin: 6px 0;
+      background: rgba(10, 18, 28, 0.6);
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+      border-left: 6px solid #3a4c62;
+      transition: all 0.15s;
+    }
+
+    .correct {
+      border-left-color: #4caf7a;
+      background: rgba(30, 70, 40, 0.25);
+    }
+
+    .wrong {
+      border-left-color: #c95b5b;
+    }
+
+    audio {
+      width: 100%;
+      margin: 12px 0;
+      border-radius: 40px;
+      background: #1e2630;
+      height: 40px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    #finalTime {
+      font-size: 28px;
+      font-weight: 300;
+      margin: 10px 0;
+    }
+
+    .fade-transition {
+      transition: opacity 0.25s;
+    }
+  </style>
 </head>
 <body>
-
 <div id="app">
+  <div class="lang-toggle">
+    <button id="langToggle" class="active">English titles</button>
+  </div>
 
-<div id="idle">
+  <div id="idle">
     <h3>Bocchi Music Quiz</h3>
-    <div id="loading">Background loading: 0%</div>
-    <button id="startBtn">Start</button>
-    <button id="preloadBtn">Preload music</button>
-</div>
+    <div id="loading"></div>
+    <button id="preloadBtn">Preload all tracks</button>
+    <button id="startBtn">Start Quiz</button>
+  </div>
 
-<div id="playing" class="hidden">
+  <div id="playing" class="hidden">
     <audio id="player" controls></audio>
     <div id="choices"></div>
-    <div id="status"></div>
+    <div id="status">Ready</div>
     <div id="timer">0.00s</div>
-</div>
+  </div>
 
-<div id="results" class="hidden">
+  <div id="results" class="hidden">
     <h3>Results</h3>
     <div id="finalTime"></div>
-    <button id="shareBtn">Share</button>
+    <button id="shareBtn">Copy results</button>
     <ul id="list"></ul>
-</div>
-
+    <button id="playAgainBtn" style="margin-top:16px;">Play again</button>
+  </div>
 </div>
 
 <script>
-const files = [
-"Distortion!!.mp3","Re_Re_.mp3","UNITE.mp3","milky way.mp3",
-"あのバンド.mp3","なにが悪い.mp3","ひとりぼっち東京.mp3","ひみつ基地.mp3",
-"カラカラ.mp3","ギターと孤独と蒼い惑星.mp3","ドッペルゲンガー.mp3",
-"フラッシュバッカー.mp3","ラブソングが歌えない.mp3","ワタシダケユウレイ.mp3",
-"今、僕、アンダーグラウンドから.mp3","僕と三原色.mp3","光の中へ.mp3",
-"夢を束ねて.mp3","小さな海.mp3","忘れてやらない.mp3","惑う星.mp3",
-"星座になれたら.mp3","月並みに輝け.mp3","秒針少女.mp3",
-"転がる岩、君に朝が降る.mp3","青い春と西の空.mp3","青春コンプレックス.mp3"
-];
+  (function(){
+    "use strict";
 
-// ===== preload =====
-let audioMap = {};
-let loadedSet = new Set();
-let loadingEl = document.getElementById("loading");
+    const FILE_LIST = [
+        "Distortion!!.m4a",
+        "Re_Re_.m4a",
+        "UNITE.m4a",
+        "milky way.m4a",
+        "あのバンド (That band).m4a",
+        "なにが悪い (Whats wrong with).m4a",
+        "ひとりぼっち東京 (Hitoribocchi Tokyo).m4a",
+        "ひみつ基地 (Secret base).m4a",
+        "カラカラ (Karakara).m4a",
+        "ギターと孤独と蒼い惑星 (Guitar, Loneliness and Blue planet).m4a",
+        "ドッペルゲンガー (Doppelganger).m4a",
+        "フラッシュバッカー (Flashbacker).m4a",
+        "ラブソングが歌えない (I cant sing a love song).m4a",
+        "ワタシダケユウレイ (Im the only ghost).m4a",
+        "今、僕、アンダーグラウンドから (Now, im coming from underground).m4a",
+        "僕と三原色 (Me and the 3 primary colors).m4a",
+        "光の中へ (Into the light).m4a",
+        "夢を束ねて (Bundle up your dreams).m4a",
+        "小さな海 (The little sea).m4a",
+        "忘れてやらない (Never forget).m4a",
+        "惑う星 (Planet).m4a",
+        "星座になれたら (If i could be a constellation).m4a",
+        "月並みに輝け (Shine as usual).m4a",
+        "秒針少女 (Chronostasis).m4a",
+        "転がる岩、君に朝が降る (Rock n Rock, Morning light falls on you).m4a",
+        "青い春と西の空 (Blue spring and Western sky).m4a",
+        "青春コンプレックス (Seishun Complex).m4a",
+    ];
+    
+    // State
+    let audioMap = {};
+    let loadedSet = new Set();
+    let useEnglishTitles = true;
+    
+    const songMeta = FILE_LIST.map(file => {
+      const base = file.replace(/\.(m4a|mp3)$/i, '');
+      const match = base.match(/^(.+?)\s*\((.+)\)$/);
+      if (match) {
+        return { file, jp: match[1].trim(), en: match[2].trim().replace("_",":") };
+      } else {
+        return { file, jp: base, en: base };
+      }
+    });
 
-function preloadFile(file) {
-    if (loadedSet.has(file)) return Promise.resolve();
+    function getDisplayName(meta) {
+      return useEnglishTitles ? meta.en : meta.jp;
+    }
 
-    return new Promise(resolve => {
+    function formatNameByFile(filename) {
+      const meta = songMeta.find(m => m.file === filename);
+      return meta ? getDisplayName(meta) : filename.replace(/\.(m4a|mp3)$/, '').replace("_", ":");
+    }
+
+    // DOM
+    const idleDiv = document.getElementById('idle');
+    const playingDiv = document.getElementById('playing');
+    const resultsDiv = document.getElementById('results');
+    const player = document.getElementById('player');
+    const choicesEl = document.getElementById('choices');
+    const statusEl = document.getElementById('status');
+    const timerEl = document.getElementById('timer');
+    const listEl = document.getElementById('list');
+    const finalTimeEl = document.getElementById('finalTime');
+    const loadingEl = document.getElementById('loading');
+    const langToggleBtn = document.getElementById('langToggle');
+
+    function updateLangButton() {
+      langToggleBtn.textContent = useEnglishTitles ? 'English titles' : 'Japanese titles';
+      langToggleBtn.classList.toggle('active', useEnglishTitles);
+    }
+
+    langToggleBtn.addEventListener('click', () => {
+      useEnglishTitles = !useEnglishTitles;
+      updateLangButton();
+      if (!playingDiv.classList.contains('hidden') && currentSong) renderChoices(currentSong);
+      if (!resultsDiv.classList.contains('hidden')) renderList();
+    });
+
+    // Preload
+    function preloadFile(file) {
+      if (loadedSet.has(file)) return Promise.resolve();
+      return new Promise((resolve) => {
         const audio = new Audio("musics/" + encodeURIComponent(file));
         audio.preload = "auto";
-
         const done = () => {
-            if (!loadedSet.has(file)) {
-                loadedSet.add(file);
-                loadingEl.textContent =
-                    "Background loading: " + Math.floor((loadedSet.size / files.length) * 100) + "%";
-            }
-            resolve();
+          if (!loadedSet.has(file)) {
+            loadedSet.add(file);
+            const percent = Math.floor((loadedSet.size / FILE_LIST.length) * 100);
+            loadingEl.textContent = `Preload: ${percent}% ${loadedSet.size}/27 Songs`;
+          }
+          resolve();
         };
-
         audio.addEventListener("loadeddata", done, { once: true });
         audio.addEventListener("error", done, { once: true });
-
         audioMap[file] = audio;
-    });
-}
+      });
+    }
 
-async function preloadAllFast() {
-    await Promise.all(files.map(preloadFile));
-}
+    async function preloadAll() {
+      loadingEl.textContent = `Preload: 0% 0/27 Songs`;
+      await Promise.all(FILE_LIST.map(preloadFile));
+    }
 
-let preloadRunning = false;
+    async function preloadPriority(files) {
+      await Promise.all(files.map(preloadFile));
+    }
 
-async function preloadNextFromQueue() {
-    if (preloadRunning || !queue) return;
-    preloadRunning = true;
-
-    let priority = queue.slice(index, index + 3);
-
-    // parallel load next 3
-    await Promise.all(priority.map(preloadFile));
-
-    // background rest
-    (async () => {
-        for (let file of files) {
-            if (!loadedSet.has(file)) {
-                preloadFile(file);
-                await new Promise(r => setTimeout(r, 30));
-            }
+    function backgroundPreloadRemaining() {
+      (async () => {
+        for (let file of FILE_LIST) {
+          if (!loadedSet.has(file)) {
+            await preloadFile(file);
+            await new Promise(r => setTimeout(r, 20));
+          }
         }
-    })();
-
-    preloadRunning = false;
-}
-
-// ===== utils
-function shuffle(a){
-    for(let i=a.length-1;i>0;i--){
-        let j=Math.floor(Math.random()*(i+1));
-        [a[i],a[j]]=[a[j],a[i]];
+      })();
     }
-}
-function pickChoices(correct){
-    let pool = files.filter(f=>f!==correct);
-    shuffle(pool);
-    let arr = [correct,...pool.slice(0,3)];
-    shuffle(arr);
-    return arr;
-}
-function formatName(name){
-    return name
-        .replace(".mp3","")
-        .replace("Re_Re_","Re:Re:")
-        .replace("_",": ");
-}
 
-// ===== DOM
-const idle = document.getElementById("idle");
-const playing = document.getElementById("playing");
-const results = document.getElementById("results");
+    // Game state
+    let queue = [];
+    let index = 0;
+    let currentSong = null;
+    let stats = {};
+    let gameRunning = false;
+    let locked = false;
+    
+    let quizElapsedSeconds = 0;
+    let lastFrameTime = 0;
+    let timerAnimationFrame = null;
+    let isPlaybackActive = false;
+    let songStartTime = 0;
 
-const player = document.getElementById("player");
-const choicesEl = document.getElementById("choices");
-const statusEl = document.getElementById("status");
-const timerEl = document.getElementById("timer");
-const listEl = document.getElementById("list");
-const finalTimeEl = document.getElementById("finalTime");
+    function setPlaybackActive(active) { isPlaybackActive = active; }
 
-// ===== state
-let queue, index, stats;
-let startTime, songStartTime;
-let running=false, locked=false;
-
-// ===== playback sync =====
-function waitForPlaybackStart() {
-    return new Promise(resolve => {
-        const onPlay = () => {
-            player.removeEventListener("playing", onPlay);
-            resolve();
-        };
-        player.addEventListener("playing", onPlay);
-        setTimeout(resolve, 1000);
+    player.addEventListener('play', () => setPlaybackActive(true));
+    player.addEventListener('playing', () => setPlaybackActive(true));
+    player.addEventListener('pause', () => setPlaybackActive(false));
+    player.addEventListener('waiting', () => setPlaybackActive(false));
+    player.addEventListener('stalled', () => setPlaybackActive(false));
+    player.addEventListener('ended', () => setPlaybackActive(false));
+    player.addEventListener('error', () => setPlaybackActive(false));
+    player.addEventListener('seeking', () => setPlaybackActive(false));
+    player.addEventListener('seeked', () => {
+      if (!player.paused && player.readyState >= 2) setPlaybackActive(true);
     });
-}
 
-// ===== modes
-function showIdle(){ idle.classList.remove("hidden"); playing.classList.add("hidden"); results.classList.add("hidden"); }
-function showPlaying(){ idle.classList.add("hidden"); playing.classList.remove("hidden"); results.classList.add("hidden"); }
-function showResults(){ idle.classList.add("hidden"); playing.classList.add("hidden"); results.classList.remove("hidden"); }
-
-// ===== game
-function initGame(){
-    queue=[...files];
-    shuffle(queue);
-    index=0;
-
-    stats={};
-    queue.forEach(f=>stats[f]={wrong:0,solved:false,time:0});
-
-    startTime=performance.now();
-    running=true;
-
-    preloadNextFromQueue();
-    loadSong();
-    updateTimer();
-}
-
-async function loadSong(){
-    if(index>=queue.length) return endGame();
-
-    let current = queue[index];
-    let audio = audioMap[current];
-
-    if (audio) {
-        audio.currentTime = 0;
-        player.src = audio.src;
-    } else {
-        player.src = "musics/" + encodeURIComponent(current);
+    function timerLoop(now) {
+      if (!gameRunning) {
+        timerAnimationFrame = null;
+        return;
+      }
+      if (lastFrameTime === 0) {
+        lastFrameTime = now;
+        timerAnimationFrame = requestAnimationFrame(timerLoop);
+        return;
+      }
+      const delta = (now - lastFrameTime) / 1000;
+      lastFrameTime = now;
+      if (isPlaybackActive && player.readyState >= 2 && !player.seeking) {
+        quizElapsedSeconds += delta;
+      }
+      timerEl.textContent = quizElapsedSeconds.toFixed(2) + 's';
+      timerAnimationFrame = requestAnimationFrame(timerLoop);
     }
 
-    renderChoices(current);
-    player.load();
-    statusEl.textContent = "Loading...";
-
-    try {
-        await player.play();
-    } catch {
-        statusEl.textContent = "Tap play";
-        await waitForPlaybackStart();
+    function startTimer() {
+      if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
+      lastFrameTime = 0;
+      quizElapsedSeconds = 0;
+      timerEl.textContent = '0.00s';
+      timerAnimationFrame = requestAnimationFrame(timerLoop);
     }
 
-    await waitForPlaybackStart();
+    function stopTimer() {
+      if (timerAnimationFrame) {
+        cancelAnimationFrame(timerAnimationFrame);
+        timerAnimationFrame = null;
+      }
+    }
 
-    statusEl.textContent = "";
-    songStartTime = performance.now();
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
 
-}
+    function pickChoices(correctFile) {
+      let pool = FILE_LIST.filter(f => f !== correctFile);
+      shuffle(pool);
+      let choices = [correctFile, ...pool.slice(0, 3)];
+      shuffle(choices);
+      return choices;
+    }
 
-function renderChoices(correct){
-    choicesEl.innerHTML="";
-    statusEl.textContent="";
+    function renderChoices(correctFile) {
+      choicesEl.innerHTML = '';
+      pickChoices(correctFile).forEach(opt => {
+        const btn = document.createElement('button');
+        btn.textContent = formatNameByFile(opt);
+        btn.addEventListener('click', () => handleAnswer(btn, opt, correctFile));
+        choicesEl.appendChild(btn);
+      });
+    }
 
-    pickChoices(correct).forEach(opt=>{
-        let b=document.createElement("button");
-        b.textContent=formatName(opt);
-        b.onclick=()=>handleAnswer(b,opt,correct);
-        choicesEl.appendChild(b);
-    });
-}
-
-function handleAnswer(btn,selected,correct){
-    if(!running||locked) return;
-    locked=true;
-
-    if(selected===correct){
-        btn.classList.add("correctFlash");
-        statusEl.textContent="Correct";
-
-        let t=(performance.now()-songStartTime)/1000;
-        stats[correct].solved=true;
-        stats[correct].time=t;
-
-        setTimeout(()=>{
-            index++;
-            locked=false;
-            preloadNextFromQueue();
-            loadSong();
-        },350);
-    } else {
-        btn.classList.add("wrongFlash");
-        statusEl.textContent="Wrong";
+    function handleAnswer(btn, selected, correct) {
+      if (!gameRunning || locked) return;
+      locked = true;
+      
+      if (selected === correct) {
+        btn.classList.add('correct-flash');
+        statusEl.textContent = 'Correct';
+        const timeTaken = (performance.now() - songStartTime) / 1000;
+        stats[correct].solved = true;
+        stats[correct].time = timeTaken;
+        setTimeout(() => {
+          btn.classList.remove('correct-flash');
+          index++;
+          locked = false;
+          if (index < queue.length) loadSong();
+          else endGame();
+        }, 400);
+      } else {
+        btn.classList.add('wrong-flash');
+        statusEl.textContent = 'Wrong';
         stats[correct].wrong++;
-        startTime-=10000;
-
-        setTimeout(()=>{
-            btn.classList.remove("wrongFlash");
-            locked=false;
-        },300);
-    }
-}
-
-function endGame(){
-    running=false;
-    player.pause();
-
-    let total=(performance.now()-startTime)/1000;
-    finalTimeEl.textContent="Total Time: "+total.toFixed(2)+"s";
-
-    renderList();
-    showResults();
-}
-
-// ===== timer
-function updateTimer(){
-    if(!running) return;
-
-    if (!player.paused && !player.seeking) {
-        timerEl.textContent =
-            ((performance.now()-startTime)/1000).toFixed(2)+"s";
+        quizElapsedSeconds += 10;
+        setTimeout(() => {
+          btn.classList.remove('wrong-flash');
+          locked = false;
+        }, 350);
+      }
     }
 
-    requestAnimationFrame(updateTimer);
-}
+    async function loadSong() {
+      if (index >= queue.length) { endGame(); return; }
+      currentSong = queue[index];
+      const audio = audioMap[currentSong];
+      player.src = audio ? audio.src : "musics/" + encodeURIComponent(currentSong);
+      player.load();
+      statusEl.textContent = 'Loading...';
+      setPlaybackActive(false);
+      
+      await new Promise((resolve) => {
+        const onCanPlay = () => { player.removeEventListener('canplay', onCanPlay); resolve(); };
+        player.addEventListener('canplay', onCanPlay);
+        setTimeout(resolve, 2000);
+      });
+      
+      try { await player.play(); } catch (e) { statusEl.textContent = 'Click play to start'; }
+      if (player.paused) {
+        await new Promise(resolve => {
+          const onPlay = () => { player.removeEventListener('play', onPlay); resolve(); };
+          player.addEventListener('play', onPlay);
+        });
+      }
+      
+      statusEl.textContent = '';
+      songStartTime = performance.now();
+      renderChoices(currentSong);
+      preloadPriority(queue.slice(index+1, index+4));
+    }
 
-// ===== results
-function renderList(){
-    listEl.innerHTML="";
-    queue.forEach(f=>{
-        let li=document.createElement("li");
-        let s=stats[f];
+    function initGame() {
+      queue = [...FILE_LIST];
+      shuffle(queue);
+      index = 0;
+      stats = {};
+      FILE_LIST.forEach(f => { stats[f] = { wrong: 0, solved: false, time: 0 }; });
+      langToggleBtn.disabled=true;
+      gameRunning = true;
+      locked = false;
+      startTimer();
+      preloadPriority(queue.slice(0, 4));
+      backgroundPreloadRemaining();
+      loadSong();
+    }
 
-        if(s.solved&&s.wrong===0) li.classList.add("correct");
-        else if(s.wrong>0) li.classList.add("wrong");
+    function endGame() {
+      gameRunning = false;
+      setPlaybackActive(false);
+      player.pause();
+      stopTimer();
+      finalTimeEl.textContent = `Total time: ${quizElapsedSeconds.toFixed(2)}s`;
+      renderList();
+      showResults();
+      langToggleBtn.disabled=false;
+    }
 
-        li.textContent=`${formatName(f)} | wrong:${s.wrong} | time:${s.time.toFixed(2)}s`;
+    function renderList() {
+      listEl.innerHTML = '';
+      queue.forEach(file => {
+        const s = stats[file];
+        const li = document.createElement('li');
+        if (s.solved && s.wrong === 0) li.classList.add('correct');
+        else if (s.wrong > 0) li.classList.add('wrong');
+        li.textContent = `${formatNameByFile(file)}  |  wrong: ${s.wrong}  |  time: ${s.solved ? s.time.toFixed(2)+'s' : '--'}`;
         listEl.appendChild(li);
+      });
+    }
+
+    function showIdle() {
+      idleDiv.classList.remove('hidden');
+      playingDiv.classList.add('hidden');
+      resultsDiv.classList.add('hidden');
+      player.pause();
+      stopTimer();
+    }
+    
+    function showPlaying() {
+      idleDiv.classList.add('hidden');
+      playingDiv.classList.remove('hidden');
+      resultsDiv.classList.add('hidden');
+    }
+    
+    function showResults() {
+      idleDiv.classList.add('hidden');
+      playingDiv.classList.add('hidden');
+      resultsDiv.classList.remove('hidden');
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => { showPlaying(); initGame(); });
+    document.getElementById('preloadBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('preloadBtn');
+      btn.disabled = true;
+      btn.textContent = 'Preloading...';
+      await preloadAll();
+      btn.textContent = 'Preload complete';
+      setTimeout(() => { btn.textContent = 'Preload all tracks'; btn.disabled = false; }, 2000);
     });
-}
-
-// ===== controls
-startBtn.onclick=()=>{
-    showPlaying();
-    initGame();
-};
-
-document.getElementById("preloadBtn").onclick = preloadAllFast;
-
-document.getElementById("shareBtn").onclick=()=>{
-    let text=finalTimeEl.textContent+"\n";
-    queue.forEach(f=>{
-        let s=stats[f];
-        text+=`${formatName(f)} | wrong:${s.wrong} | time:${s.time.toFixed(2)}s\n`;
+    document.getElementById('shareBtn').addEventListener('click', () => {
+      let text = `Bocchi Music Quiz\n${finalTimeEl.textContent}\n`;
+      queue.forEach(f => {
+        const s = stats[f];
+        text += `${formatNameByFile(f)} | wrong:${s.wrong} | ${s.solved ? s.time.toFixed(2)+'s' : '--'}\n`;
+      });
+      navigator.clipboard?.writeText(text).then(() => {
+        const btn = document.getElementById('shareBtn');
+        btn.textContent = 'Copied';
+        setTimeout(() => btn.textContent = 'Copy results', 2000);
+      }).catch(() => alert('Copy manually'));
     });
-    navigator.clipboard.writeText(text);
-    document.getElementById("shareBtn").innerText="Copied";
-    setTimeout(()=>{document.getElementById("shareBtn").innerText="Share";},300);
-};
+    document.getElementById('playAgainBtn').addEventListener('click', showIdle);
 
-showIdle();
+    window.addEventListener('load', () => { preloadPriority(FILE_LIST.slice(0, 3)); });
+    updateLangButton();
+    showIdle();
+  })();
 </script>
 </body>
 </html>
